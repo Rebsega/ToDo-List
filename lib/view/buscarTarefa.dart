@@ -52,7 +52,7 @@ class _BuscarTarefaState extends State<BuscarTarefa> {
             ),
             SingleChildScrollView(
               child: Container(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 child: FutureBuilder<List<Object>>(
                   future: dbHelper.queryAll(),
                   builder: (BuildContext context,
@@ -75,15 +75,14 @@ class _BuscarTarefaState extends State<BuscarTarefa> {
 
 
 Widget _buildTarefasList(List<Object> tarefasObject) {
-  List<Tarefa> tarefas = tarefasObject.map((row) => Tarefa.fromMap(row as Map<String, dynamic>)).toList();
-  return Column(
-    children: tarefas.map((tarefa) => ListTile(
-      title: Text(tarefa.nome),
-      subtitle: Text(tarefa.status.toString()),
+    return Column(
+    children: tarefasObject.map((tarefa) => ListTile(
+      title: Text(tarefa.toString()),
+      subtitle: Text(tarefa.toString()),
       trailing: Checkbox(
-        value: tarefa.status == 1 ? true : false,
+        value: tarefa == 1 ? true : false,
         onChanged: (value) {
-          tarefa.status = value! ? true : false;
+          tarefa = value! ? true : false;
 
         },
       ),
