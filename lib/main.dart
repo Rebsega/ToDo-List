@@ -1,16 +1,12 @@
 import 'dart:io';
 
+import 'package:first_project/database/databaseHelper.dart';
+import 'package:first_project/entities/tarefa.dart';
+import 'package:first_project/view/buscarTarefa.dart';
 import 'package:flutter/material.dart';
 
 void main() {
   runApp(const MyApp());
-}
-
-class Tarefa {
-  String nome;
-  bool concluida;
-
-  Tarefa({required this.nome, this.concluida = false});
 }
 
 class MyApp extends StatelessWidget {
@@ -37,9 +33,32 @@ class TodoList extends StatefulWidget {
 }
 
 class _MyTodoListState extends State<TodoList> {
-  final List<Tarefa> _tarefas = [];
+  DatabaseHelper dbHelper = DatabaseHelper();
+
+  List<Object> _tarefasBuscadas = [];
+
+  List<Tarefa> listaDeTarefasTarefa = [];
 
   final TextEditingController _tarefasController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    buscaTarefinhas();
+  }
+
+  buscaTarefinhas() async {
+    _tarefasBuscadas = await dbHelper.queryAll();
+    _tarefasBuscadas.forEach((element) {
+      print('aaaaaa $element');
+    });
+
+    for (var elemento in _tarefasBuscadas) {
+      if (elemento is Tarefa) {
+        listaDeTarefasTarefa.add(elemento);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,46 +68,59 @@ class _MyTodoListState extends State<TodoList> {
         ),
         body: Container(
           color: Colors.white,
-          child: Column(
-          
-            children: [            
-              TextField(
-                controller: _tarefasController,
-                decoration: const InputDecoration(
-                  hintText: 'Digite o nome da tarefa',
+          child: Column(children: [
+            TextField(
+              controller: _tarefasController,
+              decoration: const InputDecoration(
+                hintText: 'Digite o nome da tarefa',
+              ),
+            ),
+            ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    listaDeTarefasTarefa.add(Tarefa(
+                        id: listaDeTarefasTarefa.length + 1,
+                        nome: _tarefasController.text));
+                    dbHelper.insert({'tarefa': _tarefasController.text});
+                    _tarefasController.text = "";
+                  });
+                },
+                child: const Text('Adicionar tarefa')),
+            Column(
+              children: listaDeTarefasTarefa.map((tarefa) {
+                print("TAREFINHAAAAAAA ${tarefa.toString()}");
+                return Text(tarefa.nome);
+              }).toList(),
+            ),
+            ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                const BuscarTarefa(title: '')));
+                  });
+                },
+                child: const Text('Buscar Tarefa')),
+
+            /*Expanded(                
+                child: Column(
+                  children: listaDeTarefasTarefa.map((tarefa) => ListTile(
+                    title: Text(tarefa.nome),
+                    subtitle: Text(tarefa.id.toString()),
+                    trailing: Checkbox(
+                      value: tarefa.status,
+                      onChanged: (bool? value) {
+                        setState(() {
+                          tarefa.status = value!;
+                        });
+                      },
+                    ),
+                  )).toList(),
                 ),
-              ),
-              ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _tarefas.add(Tarefa(nome: _tarefasController.text));
-                      _tarefasController.text = "";
-                    });
-                  },
-                  child: const Text('Adicionar tarefa')
-              ),
-              Expanded(
-                child: ListView.builder(
-                    itemCount: _tarefas.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return ListTile(
-                      title: Text(_tarefas[index].nome),                      
-                      trailing: Checkbox(
-                    value: _tarefas[index].concluida,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        _tarefas[index].concluida = value!;
-                      });
-                    },
-                  ),
-                        
-                    );
-                    },
-                )
-              )
-            ]
-          ),
-        )
-        );
+              )*/
+          ]),
+        ));
   }
 }
