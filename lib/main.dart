@@ -73,17 +73,14 @@ class _MyTodoListState extends State<TodoList> {
                     itemBuilder: (BuildContext context, int index) {
                       return ListTile(
                       title: Text(_tarefas[index].nome),                      
-                      trailing:
-                      Row(children: [
-                        ElevatedButton(onPressed: () {
-                          setState(() {
-                            _tarefas[index].concluida = !_tarefas[index].concluida;
-                            
-                          });
-                        }, child: Text(_tarefas[index].concluida ? "Desfazer" : "Concluir")),
-                        
-                        
-                      ],) 
+                      trailing: Checkbox(
+                    value: _tarefas[index].concluida,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _tarefas[index].concluida = value!;
+                      });
+                    },
+                  ),
                         
                     );
                     },
