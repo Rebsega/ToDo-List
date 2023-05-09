@@ -15,7 +15,8 @@ class _BuscarTarefaState extends State<BuscarTarefa> {
 
   final TextEditingController _tarefasInput = TextEditingController();
 
-  late Tarefa tarefaBuscada = Tarefa(id: 0, nome: '', status: false);
+  late Future<List<Map<String, dynamic>>> tarefasFuture = DatabaseHelper()
+      .queryAll();
 
   List<Object> aux = [];
   @override
@@ -34,58 +35,56 @@ class _BuscarTarefaState extends State<BuscarTarefa> {
               ),
             ),
             ElevatedButton(
-              onPressed: () async {
+              onPressed: () {
                 int id = int.parse(_tarefasInput.text);
-                Object aux = await dbHelper.queryById(id);
-                print("Tarefa buscada: ${aux.toString()}");
+                tarefasFuture = dbHelper.queryById(id);
+                print("Tarefa buscada: ${tarefasFuture}");
               },
               child: const Text('Buscar'),
             ),
             ElevatedButton(
-              onPressed: () async {
-                aux = await dbHelper.queryAll();
-                aux.forEach((element) {
-                  print(element.toString());
-                });
+              onPressed: () {
+                tarefasFuture = dbHelper.queryAll();
+                print(tarefasFuture);
               },
               child: const Text('Buscar Todas'),
             ),
+            
             SingleChildScrollView(
-              child: Container(
-                padding: const EdgeInsets.all(16.0),
-                child: FutureBuilder<List<Object>>(
-                  future: dbHelper.queryAll(),
-                  builder: (BuildContext context,
-                      AsyncSnapshot<List<Object>> snapshot) {
-                    if (!snapshot.hasData) {
-                      return Center(child: CircularProgressIndicator());
-                    } else if (snapshot.data!.isEmpty) {
-                      return Text('Nenhuma tarefa encontrada.');
+              child: SizedBox(
+                height: 700,
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: tarefasFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      final tarefas = snapshot.data!;
+                      // Exibir as tarefas na UI
+                      return ListView.builder(
+                        itemCount: tarefas.length,
+                        itemBuilder: (context, index) {
+                          final tarefa = tarefas[index];
+                          print('TAREFA $tarefa');
+                          return ListTile(
+                            title: Text(tarefa['nome'].toString()),
+                            subtitle: Row(
+                              children: [
+                                Text(tarefa['id'].toString()),
+                                Text(tarefa['status'].toString() == '0' ? 'Não' : 'Sim')
+                              ],
+                            )
+                          );
+                        },
+                      );
+                    } else if (snapshot.hasError) {
+                      return Text('Erro ao carregar as tarefas: ${snapshot.error}');
                     } else {
-                      return _buildTarefasList(snapshot.data!);
+                      return const Center(child: CircularProgressIndicator());
                     }
                   },
                 ),
-              ),
-            ),
+              )
+            )
           ])),
     );
   }
-}
-
-
-Widget _buildTarefasList(List<Object> tarefasObject) {
-    return Column(
-    children: tarefasObject.map((tarefa) => ListTile(
-      title: Text(tarefa.toString()),
-      subtitle: Text(tarefa.toString()),
-      trailing: Checkbox(
-        value: tarefa == 1 ? true : false,
-        onChanged: (value) {
-          tarefa = value! ? true : false;
-
-        },
-      ),
-    )).toList(),
-  );
 }

@@ -7,8 +7,8 @@ class DatabaseHelper {
 
   static const table = 'myTable';
 
-  static const columnId = '_id';
-  static const columnTarefa = 'tarefa';
+  static const columnId = 'id';
+  static const columnTarefa = 'nome';
   static const columnStatus = 'status';
 
   static Database? _database;
@@ -34,10 +34,13 @@ class DatabaseHelper {
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE $table (
-        $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
-        $columnTarefa TEXT        
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT,
+        status INTEGER
         )
-      ''');    
+      ''');
+
+
   }
 
   Future<int> insert(Map<String, dynamic> row) async {
@@ -51,6 +54,16 @@ class DatabaseHelper {
     return await db.update(table, row, where: '$columnId = ?', whereArgs: [id]);
   }
 
+  Future<int> updateStatus(int id, bool concluida) async {
+    final db = await database;
+    return await db.update(
+      table,
+      {'status': concluida ? 1 : 0},
+      where: '$columnId = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<int> delete(int id) async {
     final db = await database;
     return await db.delete(table, where: '$columnId = ?', whereArgs: [id]);
@@ -61,14 +74,18 @@ class DatabaseHelper {
     return await db.query(table);
   }
 
-  Future<Object> queryById(int id) async {
+  Future<List<Map<String, dynamic>>> queryById(int id) async {
     final db = await database;
     final result = await db.query(table, where: '$columnId = ?', whereArgs: [id]);
 
     if (result.isNotEmpty) {
-      return result.first.toString();
+      return result;
     } else {
-      return {};
+      return [];
     }
   }
 }
+
+
+
+

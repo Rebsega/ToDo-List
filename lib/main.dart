@@ -28,36 +28,29 @@ class TodoList extends StatefulWidget {
   const TodoList({super.key, required this.title});
   final String title;
 
+
   @override
   State<TodoList> createState() => _MyTodoListState();
 }
 
 class _MyTodoListState extends State<TodoList> {
-  DatabaseHelper dbHelper = DatabaseHelper();
-
-  List<Object> _tarefasBuscadas = [];
-
-  List<Tarefa> listaDeTarefasTarefa = [];
-
-  final TextEditingController _tarefasController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
-    buscaTarefinhas();
+    atualizarTarefas();
   }
 
-  buscaTarefinhas() async {
-    _tarefasBuscadas = await dbHelper.queryAll();
-    _tarefasBuscadas.forEach((element) {
-      print('aaaaaa $element');
-    });
+  DatabaseHelper dbHelper = DatabaseHelper();
+  bool _isChecked = false;
 
-    for (var elemento in _tarefasBuscadas) {
-      if (elemento is Tarefa) {
-        listaDeTarefasTarefa.add(elemento);
-      }
-    }
+  late Future<List<Map<String, dynamic>>> tarefasFuture = DatabaseHelper()
+      .queryAll();
+
+  final TextEditingController _tarefasController = TextEditingController();
+
+  atualizarTarefas() {
+    tarefasFuture = dbHelper.queryAll();
+    print("Atualizando Tarefas");
   }
 
   @override
@@ -77,20 +70,71 @@ class _MyTodoListState extends State<TodoList> {
             ),
             ElevatedButton(
                 onPressed: () {
-                  setState(() {
-                    listaDeTarefasTarefa.add(Tarefa(
-                        id: listaDeTarefasTarefa.length + 1,
-                        nome: _tarefasController.text));
-                    dbHelper.insert({'tarefa': _tarefasController.text});
+
+                    atualizarTarefas();
+
+                },
+                child: const Text('Atualizar Tarefas')
+            ),
+            ElevatedButton(
+                onPressed: () {
+                  setState(() async {
+                    await dbHelper.insert({
+                      'nome': _tarefasController.text,
+                      'status': false
+                    });
                     _tarefasController.text = "";
                   });
                 },
                 child: const Text('Adicionar tarefa')),
             Column(
-              children: listaDeTarefasTarefa.map((tarefa) {
-                print("TAREFINHAAAAAAA ${tarefa.toString()}");
-                return Text(tarefa.nome);
-              }).toList(),
+              children: [
+                SizedBox(
+                  height: 600,
+                  child: FutureBuilder<List<Map<String, dynamic>>> (
+                    future: tarefasFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        final tarefas = snapshot.data!;
+                        // Exibir as tarefas na UI
+                        return ListView.builder(
+                          itemCount: tarefas.length,
+                          itemBuilder: (context, index) {
+                            final tarefa = tarefas[index];
+                            print('TAREFA $tarefa');
+                            return ListTile(
+                                title: Text(tarefa['nome'].toString()),
+                                subtitle: Row(
+                                  children: [
+                                    Text('ID: ${tarefa['id'].toString()}  '),
+                                    Text(tarefa['status'].toString() == '0' ? 'Não' : 'Sim'),
+                                    Checkbox(
+                                        value: _isChecked,
+                                        onChanged: (bool? value) async {
+
+                                          int rowsAffected = await dbHelper.updateStatus(tarefa['id'], value!);
+                                          setState(() {
+                                            _isChecked = value;
+                                          });
+                                          print("ROWS $rowsAffected");
+                                        }
+                                    )
+                                  ],
+                                )
+                            );
+                          },
+                        );
+                      } else if (snapshot.hasError) {
+                        return Text('Erro ao carregar as tarefas: ${snapshot.error}');
+                      } else {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                    },
+                  ),
+                )
+
+
+              ]
             ),
             ElevatedButton(
                 onPressed: () {
@@ -103,23 +147,6 @@ class _MyTodoListState extends State<TodoList> {
                   });
                 },
                 child: const Text('Buscar Tarefa')),
-
-            /*Expanded(                
-                child: Column(
-                  children: listaDeTarefasTarefa.map((tarefa) => ListTile(
-                    title: Text(tarefa.nome),
-                    subtitle: Text(tarefa.id.toString()),
-                    trailing: Checkbox(
-                      value: tarefa.status,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          tarefa.status = value!;
-                        });
-                      },
-                    ),
-                  )).toList(),
-                ),
-              )*/
           ]),
         ));
   }
